@@ -1,9 +1,19 @@
+import HeroSection from "./components/HeroSection";
+import TaglineSection from "./components/TaglineSection";
+import AboutSection from "./components/AboutSection";
+import PhotoBannerSection from "./components/PhotoBannerSection";
+import ServicesSection from "./components/ServicesSection";
+import SelectedWorkSection from "./components/SelectedWorkSection";
+
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black">
-      <h1 className="text-6xl font-bold tracking-tight text-red-500">
-        Do Hoai Nam
-      </h1>
-    </div>
+    <main>
+      <HeroSection />
+      <TaglineSection />
+      <AboutSection />
+      <PhotoBannerSection />
+      <ServicesSection />
+      <SelectedWorkSection />
+    </main>
   );
 }
