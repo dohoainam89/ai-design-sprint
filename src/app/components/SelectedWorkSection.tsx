@@ -10,19 +10,16 @@
     All 4 cards stacked (390px each) → CTA box full-width
 */
 
-const img = {
-  surfers:  "https://www.figma.com/api/mcp/asset/dca348a1-e774-4647-a874-93debea50a87",
-  cyberpunk:"https://www.figma.com/api/mcp/asset/85499749-0137-4b7b-b98b-ea008d9240f9",
-  agency:   "https://www.figma.com/api/mcp/asset/45829f49-3471-4e0b-8d06-b184f0c77d92",
-  minimal:  "https://www.figma.com/api/mcp/asset/7abc0efd-dc5a-4c02-8635-26a8249084da",
-};
+import { urlFor } from "@/sanity/lib/image";
+import type { SanityImageSource } from "@sanity/image-url";
 
-const projects = [
-  { name: "Surfers Paradise",   image: img.surfers,   tags: ["Social Media", "Photography"] },
-  { name: "Cyberpunk Caffe",    image: img.cyberpunk,  tags: ["Social Media", "Photography"] },
-  { name: "Agency 976",         image: img.agency,    tags: ["Social Media", "Photography"] },
-  { name: "Minimal Playground", image: img.minimal,   tags: ["Social Media", "Photography"] },
-];
+export type PortfolioItem = {
+  _id: string;
+  title: string;
+  coverImage?: SanityImageSource & { alt?: string };
+  categories?: { _id: string; title: string }[];
+  link?: string;
+};
 
 const LABEL = "text-[14px] text-[#1f1f1f] leading-[1.1]";
 
@@ -53,29 +50,45 @@ function ProjectCard({
   project,
   heightClass,
 }: {
-  project: (typeof projects)[0];
+  project: PortfolioItem;
   heightClass: string;
 }) {
-  return (
+  const imgSrc = project.coverImage
+    ? urlFor(project.coverImage).width(900).url()
+    : "";
+
+  const card = (
     <div className="flex flex-col gap-[10px]">
       <div className={`relative w-full overflow-hidden ${heightClass}`}>
-        <img
-          src={project.image}
-          alt={project.name}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute bottom-4 left-4 flex gap-3">
-          {project.tags.map((t) => <Tag key={t} label={t} />)}
-        </div>
+        {imgSrc ? (
+          <img
+            src={imgSrc}
+            alt={(project.coverImage as { alt?: string })?.alt ?? project.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-[#e8e8e8]" />
+        )}
+        {project.categories && project.categories.length > 0 && (
+          <div className="absolute bottom-4 left-4 flex gap-3">
+            {project.categories.map((c) => <Tag key={c._id} label={c.title} />)}
+          </div>
+        )}
       </div>
       <div className="flex items-center justify-between">
         <p className="font-black text-black uppercase leading-[1.1] tracking-[-0.04em] text-[24px] md:text-[36px]">
-          {project.name}
+          {project.title}
         </p>
         <ArrowIcon />
       </div>
     </div>
   );
+
+  return project.link ? (
+    <a href={project.link} target="_blank" rel="noopener noreferrer" className="group">
+      {card}
+    </a>
+  ) : card;
 }
 
 function CTABox({ className = "" }: { className?: string }) {
@@ -98,7 +111,7 @@ function CTABox({ className = "" }: { className?: string }) {
   );
 }
 
-export default function SelectedWorkSection() {
+export default function SelectedWorkSection({ projects }: { projects: PortfolioItem[] }) {
   return (
     <section className="px-4 md:px-8 py-12 md:py-[80px]">
 
@@ -125,7 +138,6 @@ export default function SelectedWorkSection() {
           </div>
           <p className={`${LABEL} mt-1`} style={{ fontFamily: "var(--secondary-family)" }}>004</p>
         </div>
-        {/* Rotated [ PORTFOLIO ] — contained in 15×110 px box */}
         <div className="flex h-[110px] w-[15px] items-center justify-center shrink-0">
           <p
             className={`-rotate-90 whitespace-nowrap ${LABEL} uppercase`}
@@ -139,7 +151,7 @@ export default function SelectedWorkSection() {
       {/* ── Mobile: single column ── */}
       <div className="flex flex-col gap-6 md:hidden">
         {projects.map((p) => (
-          <ProjectCard key={p.name} project={p} heightClass="h-[390px]" />
+          <ProjectCard key={p._id} project={p} heightClass="h-[390px]" />
         ))}
         <CTABox />
       </div>
@@ -149,15 +161,15 @@ export default function SelectedWorkSection() {
 
         {/* Left column: card 744 / card 699 / CTA */}
         <div className="flex-1 flex flex-col justify-between gap-[100px]">
-          <ProjectCard project={projects[0]} heightClass="h-[744px]" />
-          <ProjectCard project={projects[1]} heightClass="h-[699px]" />
+          {projects[0] && <ProjectCard project={projects[0]} heightClass="h-[744px]" />}
+          {projects[1] && <ProjectCard project={projects[1]} heightClass="h-[699px]" />}
           <CTABox className="w-[465px]" />
         </div>
 
         {/* Right column: offset 240px, gap 117px between cards */}
         <div className="flex-1 flex flex-col gap-[117px] pt-[240px]">
-          <ProjectCard project={projects[2]} heightClass="h-[699px]" />
-          <ProjectCard project={projects[3]} heightClass="h-[744px]" />
+          {projects[2] && <ProjectCard project={projects[2]} heightClass="h-[699px]" />}
+          {projects[3] && <ProjectCard project={projects[3]} heightClass="h-[744px]" />}
         </div>
 
       </div>
