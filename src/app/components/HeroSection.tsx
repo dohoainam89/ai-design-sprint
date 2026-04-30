@@ -1,36 +1,89 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import WipeButton from "./WipeButton";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-const heroImage =
-  "https://www.figma.com/api/mcp/asset/233e4cb4-2e19-4d58-98b9-905623b64f98";
+const heroImage = "/hero.jpg";
 
 const navLinks = ["About", "Services", "Projects", "News", "Contact"];
 
 export default function HeroSection() {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const sectionRef = useRef<HTMLElement>(null);
+  const imageWrapRef = useRef<HTMLDivElement>(null);
+  const harveyRef = useRef<HTMLSpanElement>(null);
+  const specterRef = useRef<HTMLSpanElement>(null);
+  const labelRef = useRef<HTMLParagraphElement>(null);
+  const blurRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const section = sectionRef.current;
+    const imageWrap = imageWrapRef.current;
+    if (!section || !imageWrap) return;
+
+    // Set initial image scale (replaces lg:scale-[1.2] Tailwind class)
+    const baseScale = window.innerWidth >= 1024 ? 1.2 : 1;
+    gsap.set(imageWrap, { scale: baseScale });
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: section,
+          start: "top top",
+          end: "bottom top",
+          scrub: 1,
+        },
+      });
+
+      // Harvey + label drift left, Specter drifts right
+      tl.to([harveyRef.current, labelRef.current], { x: "-12vw", ease: "none" }, 0)
+        .to(specterRef.current, { x: "12vw", ease: "none" }, 0)
+        // Image subtly grows as section leaves
+        .to(imageWrap, { scale: baseScale * 1.1, ease: "none" }, 0)
+        // Blur overlay fades out
+        .to(blurRef.current, { opacity: 0, ease: "none" }, 0);
+    }, section);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
     <>
-      <section className="relative h-dvh min-h-[600px] overflow-hidden bg-[#d8d5d0]">
+      <section
+        ref={sectionRef}
+        className="relative h-dvh min-h-[600px] overflow-hidden bg-[#d8d5d0]"
+      >
         {/* ── Background photo ──
-            Mobile:  object-[40%_top] shows the man's face/torso in the upper half.
-            Desktop: object-[center_15%] keeps the wider crop centred.
+            lg+ uses the oversized aspect-ratio container with negative margins;
+            md–lg uses simple inset-0 fill to avoid horizontal overflow.
+            Scale is controlled by GSAP (see useEffect above).
         */}
-        <img
-          src={heroImage}
-          alt=""
-          aria-hidden={true}
-          className="
-            absolute inset-0 h-full w-full pointer-events-none select-none
-            object-cover object-[40%_top]
-            md:object-[center_15%]
-          "
-        />
-
-        {/* ── Blur overlay — gradient mask removes the hard cutoff edge ── */}
         <div
-          className="absolute bottom-0 left-0 right-0 h-[55%] backdrop-blur-[10px]"
+          ref={imageWrapRef}
+          className="
+            absolute inset-0 will-change-transform
+            lg:inset-auto lg:-translate-y-1/2 lg:aspect-[2291/1346]
+            lg:left-[-34.79%] lg:right-[-34.79%]
+            lg:top-[calc(50%+88.84px+15rem)]
+          "
+        >
+          <img
+            src={heroImage}
+            alt=""
+            aria-hidden={true}
+            className="absolute inset-0 size-full max-w-none object-cover object-center lg:object-[center_20%] pointer-events-none select-none"
+          />
+        </div>
+
+        {/* ── Blur overlay ── */}
+        <div
+          ref={blurRef}
+          className="absolute bottom-0 left-0 right-0 h-[55%] backdrop-blur-[10px] will-change-[opacity]"
           style={{
             maskImage: "linear-gradient(to bottom, transparent 0%, black 45%)",
             WebkitMaskImage:
@@ -38,10 +91,7 @@ export default function HeroSection() {
           }}
         />
 
-        {/* ── Layout ──
-            Mobile:  justify-between → nav top, content bottom, image fills the gap.
-            Desktop: justify-start + 240 px spacer mirrors the Figma gap.
-        */}
+        {/* ── Layout ── */}
         <div className="relative h-full flex flex-col justify-between md:justify-start px-4 md:px-8">
 
           {/* Nav */}
@@ -65,9 +115,9 @@ export default function HeroSection() {
             </ul>
 
             {/* Desktop CTA */}
-            <button className="hidden md:flex items-center justify-center bg-black text-white text-sm font-medium tracking-[-0.04em] px-4 py-3 rounded-full cursor-pointer hover:opacity-80 transition-opacity">
+            <WipeButton className="hidden md:flex items-center justify-center">
               Let&apos;s talk
-            </button>
+            </WipeButton>
 
             {/* Mobile hamburger */}
             <button
@@ -86,58 +136,45 @@ export default function HeroSection() {
           {/* Desktop-only 240 px gap */}
           <div className="hidden md:block h-[240px] shrink-0" />
 
-          {/* ── Hero content ──
-              shrink-0 on both breakpoints so the block is exactly its content
-              height. On mobile the outer justify-between pushes it to the bottom.
-          */}
-          <div className="shrink-0 flex flex-col items-start pb-6 md:pb-0 w-full gap-4 md:gap-0">
+          {/* ── Hero content ── */}
+          <div className="shrink-0 flex flex-col items-start pb-6 md:pb-0 w-full gap-8 md:gap-0">
 
             {/* Name block */}
             <div className="flex flex-col w-full md:pb-[15px]">
-              {/*
-                  The H1 is full-width with text-center, so its left/right edges
-                  are exactly the container edges.
-
-                  Label:
-                    Mobile  → text-center (centred above the centred name).
-                    Desktop → text-left + px-[18px] indent (aligns to the "H"
-                              of Harvey at the container's left edge).
-              */}
               <p
-                className="w-full text-center md:text-left md:px-[18px] text-white text-sm uppercase leading-[1.1] mix-blend-overlay"
+                ref={labelRef}
+                className="w-full text-center md:text-left text-white text-sm uppercase leading-[1.1] mix-blend-overlay will-change-transform"
                 style={{ fontFamily: "var(--secondary-family)" }}
               >
                 [ Hello I&apos;m ]
               </p>
 
-              {/*
-                  Fluid font size:
-                    Mobile  → 25.6 vw  (= 96 px at 375 px, scales with viewport)
-                    Desktop → clamp(130px, 13.75 vw, 198px)
-                              13.75 vw = 198 px at 1440 px → text fills the
-                              container; shrinks proportionally at smaller widths.
-
-                  Tracking uses -0.07 em so it always scales with the font size,
-                  matching the Figma's -13.86 px at 198 px and -6.72 px at 96 px.
-              */}
               <h1
                 className="
                   font-medium text-white text-center w-full capitalize
                   mix-blend-overlay whitespace-pre-wrap
                   leading-[0.8] tracking-[-0.07em]
                   text-[25.6vw]
-                  md:text-[clamp(130px,13.75vw,198px)] md:leading-[1.1] md:mb-[-15px]
+                  md:text-left md:text-[calc((100vw-4rem)*0.1439)] md:leading-[1.1] md:mb-[-15px]
                 "
               >
-                {`Harvey   Specter`}
+                <span
+                  ref={harveyRef}
+                  className="inline-block will-change-transform"
+                >
+                  Harvey
+                </span>
+                {"   "}
+                <span
+                  ref={specterRef}
+                  className="inline-block will-change-transform"
+                >
+                  Specter
+                </span>
               </h1>
             </div>
 
-            {/* Description + CTA
-                Mobile:  full-width container so the paragraph aligns to the H1's
-                         left edge and wraps naturally across the full content area.
-                Desktop: fixed 293 px column right-aligned (matches Figma).
-            */}
+            {/* Description + CTA */}
             <div className="flex w-full md:justify-end">
               <div className="flex flex-col gap-[17px] items-start w-full md:w-[293px]">
                 <p className="font-bold italic text-[#1f1f1f] text-[14px] tracking-[-0.04em] uppercase leading-[1.1]">
@@ -149,9 +186,9 @@ export default function HeroSection() {
                   {" "}desing and art group specializing in branding, web design
                   and engineering.
                 </p>
-                <button className="bg-black text-white text-[14px] font-medium tracking-[-0.04em] px-4 py-3 rounded-full cursor-pointer hover:opacity-80 transition-opacity">
+                <WipeButton className="w-full md:w-auto">
                   Let&apos;s talk
-                </button>
+                </WipeButton>
               </div>
             </div>
 
@@ -159,7 +196,7 @@ export default function HeroSection() {
         </div>
       </section>
 
-      {/* ── Mobile menu — slides in from the right ── */}
+      {/* ── Mobile menu ── */}
       <div
         className={`
           fixed inset-0 z-50 flex flex-col bg-black px-4 py-6
@@ -168,7 +205,6 @@ export default function HeroSection() {
         `}
         aria-hidden={!menuOpen}
       >
-        {/* Header */}
         <div className="flex items-center justify-between shrink-0">
           <span className="font-semibold text-base text-white tracking-[-0.04em] capitalize select-none">
             H.Studio
@@ -185,7 +221,6 @@ export default function HeroSection() {
           </button>
         </div>
 
-        {/* Links */}
         <nav className="flex flex-col flex-1 justify-center gap-2">
           {navLinks.map((link, i) => (
             <a
@@ -205,7 +240,6 @@ export default function HeroSection() {
           ))}
         </nav>
 
-        {/* CTA */}
         <div className="shrink-0 pt-6">
           <button className="w-full bg-white text-black text-[14px] font-medium tracking-[-0.04em] px-4 py-4 rounded-full cursor-pointer hover:opacity-80 transition-opacity">
             Let&apos;s talk

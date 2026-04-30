@@ -12,6 +12,7 @@
 
 import { urlFor } from "@/sanity/lib/image";
 import type { SanityImageSource } from "@sanity/image-url";
+import WipeButton from "./WipeButton";
 
 export type PortfolioItem = {
   _id: string;
@@ -103,9 +104,7 @@ function CTABox({ className = "" }: { className?: string }) {
           Discover how my creativity transforms ideas into impactful digital
           experiences — schedule a call with me to get started.
         </p>
-        <button className="bg-black text-white text-[14px] font-medium tracking-[-0.04em] px-4 py-3 rounded-full cursor-pointer hover:opacity-80 transition-opacity">
-          Let&apos;s talk
-        </button>
+        <WipeButton>Let&apos;s talk</WipeButton>
       </div>
     </div>
   );

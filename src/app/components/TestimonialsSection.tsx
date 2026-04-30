@@ -1,3 +1,5 @@
+"use client";
+
 /*
   Desktop — py-[120px], min-h-[900px], no horizontal padding:
     "Testimonials" (Inter Medium 198px) centered absolutely over the section.
@@ -5,9 +7,11 @@
     percentages of the 1440 px frame width so they scale with the viewport.
 
   Mobile — px-4 py-16:
-    "Testimonials" heading (64px) stacked above a horizontal card strip.
-    Two cards (260 px wide) rotated slightly, second card peeks at the right edge.
+    "Testimonials" heading (64px) stacked above a touch-swipeable card carousel.
+    Cards snap one-at-a-time; dot indicators show current position.
 */
+
+import { useRef, useState, useCallback, useEffect } from "react";
 
 const testimonials = [
   {
@@ -43,6 +47,8 @@ const testimonials = [
     top: "546px",
   },
 ];
+
+const mobileRotations = ["-3.5deg", "2deg", "-2.5deg", "3deg"];
 
 function Stars() {
   return (
@@ -86,19 +92,88 @@ function Card({
   );
 }
 
+function MobileCarousel() {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const CARD_WIDTH = 353;
+  const GAP = 16;
+
+  const updateIndex = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / (CARD_WIDTH + GAP));
+    setActiveIndex(Math.min(Math.max(idx, 0), testimonials.length - 1));
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.addEventListener("scrollend", updateIndex);
+    // fallback for browsers without scrollend
+    el.addEventListener("scroll", updateIndex, { passive: true });
+    return () => {
+      el.removeEventListener("scrollend", updateIndex);
+      el.removeEventListener("scroll", updateIndex);
+    };
+  }, [updateIndex]);
+
+  const scrollTo = (index: number) => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollTo({ left: (CARD_WIDTH + GAP) * index, behavior: "smooth" });
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Scrollable track — overflow-x-auto scrolls; parent has no overflow-hidden so next card peeks */}
+      <div
+        ref={trackRef}
+        className="flex overflow-x-auto gap-4 snap-x snap-mandatory scroll-smooth -mx-4 px-4"
+        style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+      >
+        {testimonials.map((t, i) => (
+          <div key={t.name} className="snap-start shrink-0 py-3">
+            <Card
+              name={t.name}
+              quote={t.quote}
+              rotate={mobileRotations[i % mobileRotations.length]}
+              width="w-[353px]"
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Dot indicators */}
+      <div className="flex justify-center gap-2" role="tablist" aria-label="Testimonials">
+        {testimonials.map((t, i) => (
+          <button
+            key={t.name}
+            role="tab"
+            aria-selected={i === activeIndex}
+            aria-label={`Go to testimonial by ${t.name}`}
+            onClick={() => scrollTo(i)}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              i === activeIndex ? "w-6 bg-[#1f1f1f]" : "w-2 bg-[#ccc]"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function TestimonialsSection() {
   return (
     <section>
       {/* ── Desktop: scattered cards around centered heading ── */}
       <div className="hidden md:block relative min-h-[900px] py-[120px] overflow-hidden">
-        {/* "Testimonials" centered behind/among the cards */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
           <h2 className="font-medium text-black text-center capitalize tracking-[-0.07em] leading-[1.1] text-[198px]">
             Testimonials
           </h2>
         </div>
 
-        {/* Scattered cards */}
         {testimonials.map((t) => (
           <div
             key={t.name}
@@ -110,27 +185,13 @@ export default function TestimonialsSection() {
         ))}
       </div>
 
-      {/* ── Mobile: heading + horizontal card peek ── */}
-      <div className="md:hidden px-4 py-16 flex flex-col gap-8 overflow-hidden">
+      {/* ── Mobile: heading + swipeable carousel ── */}
+      <div className="md:hidden px-4 py-16 flex flex-col gap-8">
         <h2 className="font-medium text-black capitalize tracking-[-0.07em] leading-[0.8] text-[64px]">
           Testimonials
         </h2>
 
-        {/* Two cards, second one peeks at the right edge */}
-        <div className="flex -mr-4">
-          <Card
-            name={testimonials[0].name}
-            quote={testimonials[0].quote}
-            rotate="-3.5deg"
-            width="w-[260px]"
-          />
-          <Card
-            name={testimonials[3].name}
-            quote={testimonials[3].quote}
-            rotate="2deg"
-            width="w-[260px]"
-          />
-        </div>
+        <MobileCarousel />
       </div>
     </section>
   );
