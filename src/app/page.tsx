@@ -1,5 +1,6 @@
 import { defineQuery } from "groq";
 import { sanityFetch, SanityLive } from "@/sanity/lib/live";
+import Navbar from "./components/Navbar";
 import HeroSection from "./components/HeroSection";
 import TaglineSection from "./components/TaglineSection";
 import AboutSection from "./components/AboutSection";
@@ -25,6 +26,7 @@ export default async function Home() {
 
   return (
     <>
+      <Navbar />
       <main>
         <HeroSection />
         <TaglineSection />
