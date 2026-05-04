@@ -1,3 +1,5 @@
+"use client";
+
 /*
   Desktop — px-8 py-[80px]:
     Header: "Selected Work" (Inter Light 96px, 2 lines) + "004" inline · "[ PORTFOLIO ]" rotated right
@@ -10,6 +12,10 @@
     All 4 cards stacked (390px each) → CTA box full-width
 */
 
+import { useEffect, useRef } from "react";
+import Link from "next/link";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { urlFor } from "@/sanity/lib/image";
 import type { SanityImageSource } from "@sanity/image-url";
 import WipeButton from "./WipeButton";
@@ -20,6 +26,7 @@ export type PortfolioItem = {
   coverImage?: SanityImageSource & { alt?: string };
   categories?: { _id: string; title: string }[];
   link?: string;
+  slug?: string;
 };
 
 const LABEL = "text-[14px] text-[#1f1f1f] leading-[1.1]";
@@ -58,17 +65,18 @@ function ProjectCard({
     ? urlFor(project.coverImage).width(900).url()
     : "";
 
-  const card = (
+  const inner = (
     <div className="flex flex-col gap-[10px]">
+      {/* Image — overflow-hidden clips the zoom */}
       <div className={`relative w-full overflow-hidden ${heightClass}`}>
         {imgSrc ? (
           <img
             src={imgSrc}
             alt={(project.coverImage as { alt?: string })?.alt ?? project.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
         ) : (
-          <div className="absolute inset-0 bg-[#e8e8e8]" />
+          <div className="absolute inset-0 bg-[#e8e8e8] transition-transform duration-700 ease-out group-hover:scale-105" />
         )}
         {project.categories && project.categories.length > 0 && (
           <div className="absolute bottom-4 left-4 flex gap-3">
@@ -76,25 +84,44 @@ function ProjectCard({
           </div>
         )}
       </div>
+
+      {/* Title row */}
       <div className="flex items-center justify-between">
-        <p className="font-black text-black uppercase leading-[1.1] tracking-[-0.04em] text-[24px] md:text-[36px]">
+        <p className="font-black text-black uppercase leading-[1.1] tracking-[-0.04em] text-[24px] md:text-[36px] transition-colors duration-300 group-hover:text-black/60">
           {project.title}
         </p>
-        <ArrowIcon />
+        {/* Arrow nudges up-right on hover */}
+        <div className="transition-transform duration-300 ease-out group-hover:translate-x-1 group-hover:-translate-y-1">
+          <ArrowIcon />
+        </div>
       </div>
     </div>
   );
 
-  return project.link ? (
-    <a href={project.link} target="_blank" rel="noopener noreferrer" className="group">
-      {card}
-    </a>
-  ) : card;
+  if (project.slug) {
+    return (
+      <Link href={`/work/${project.slug}`} className="group" data-card>
+        {inner}
+      </Link>
+    );
+  }
+  if (project.link) {
+    return (
+      <a href={project.link} target="_blank" rel="noopener noreferrer" className="group" data-card>
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <div className="group" data-card>
+      {inner}
+    </div>
+  );
 }
 
 function CTABox({ className = "" }: { className?: string }) {
   return (
-    <div className={`relative p-6 ${className}`}>
+    <div className={`relative p-6 ${className}`} data-card>
       <span className="absolute top-0 left-0  w-5 h-5 border-t border-l border-[#1f1f1f]" />
       <span className="absolute top-0 right-0 w-5 h-5 border-t border-r border-[#1f1f1f]" />
       <span className="absolute bottom-0 left-0  w-5 h-5 border-b border-l border-[#1f1f1f]" />
@@ -111,8 +138,40 @@ function CTABox({ className = "" }: { className?: string }) {
 }
 
 export default function SelectedWorkSection({ projects }: { projects: PortfolioItem[] }) {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const ctx = gsap.context(() => {
+      const cards = section.querySelectorAll<HTMLElement>("[data-card]");
+
+      gsap.fromTo(
+        cards,
+        { y: 80, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.9,
+          ease: "power3.out",
+          stagger: 0.13,
+          scrollTrigger: {
+            trigger: section,
+            start: "top 75%",
+            toggleActions: "play reset play reset",
+          },
+        }
+      );
+    }, section);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section className="px-4 md:px-8 py-12 md:py-[80px]">
+    <section ref={sectionRef} className="px-4 md:px-8 py-12 md:py-[80px]">
 
       {/* ── Mobile header ── */}
       <div className="md:hidden flex flex-col gap-4 mb-8">

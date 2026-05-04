@@ -1,5 +1,6 @@
 import { defineQuery } from "groq";
 import { sanityFetch, SanityLive } from "@/sanity/lib/live";
+import Navbar from "./components/Navbar";
 import HeroSection from "./components/HeroSection";
 import TaglineSection from "./components/TaglineSection";
 import AboutSection from "./components/AboutSection";
@@ -16,7 +17,8 @@ const portfolioQuery = defineQuery(
     title,
     coverImage,
     "categories": categories[]->{_id, title},
-    link
+    link,
+    "slug": slug.current
   }`
 );
 
@@ -25,17 +27,19 @@ export default async function Home() {
 
   return (
     <>
+      <Navbar />
       <main>
+        {/* data-navbar-theme tells the Navbar which colour scheme to use */}
         <HeroSection />
-        <TaglineSection />
-        <AboutSection />
-        <PhotoBannerSection />
-        <ServicesSection />
-        <SelectedWorkSection projects={portfolioItems} />
-        <TestimonialsSection />
-        <NewsSection />
+        <div data-navbar-theme="light"><TaglineSection /></div>
+        <div data-navbar-theme="light"><AboutSection /></div>
+        <div data-navbar-theme="dark"><PhotoBannerSection /></div>
+        <div data-navbar-theme="dark"><ServicesSection /></div>
+        <div data-navbar-theme="light"><SelectedWorkSection projects={portfolioItems} /></div>
+        <div data-navbar-theme="light"><TestimonialsSection /></div>
+        <div data-navbar-theme="light"><NewsSection /></div>
+        <div data-navbar-theme="dark"><Footer /></div>
       </main>
-      <Footer />
       <SanityLive />
     </>
   );
